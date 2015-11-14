@@ -1,38 +1,86 @@
-var gulp = require("gulp"),
-    uglify = require("gulp-uglify"),
-    jade = require("gulp-jade"),
-    sass = require("gulp-sass"),
-    plumber = require("gulp-plumber"),
-    autoprefixer = require("gulp-autoprefixer");
+//------------------------------------------
+// Librerias Requeridas
+//------------------------------------------
+var gulp = require("gulp");
+var webserver = require('gulp-webserver');
+var stylus = require('gulp-stylus');
+var jade = require("gulp-jade");
+var nib = require("nib");
+var minifyCss = require("gulp-minify-css");
+var plumber = require("gulp-plumber");
 
+//----------------------------------------
+// configuración de rutas
+//----------------------------------------
+var config = {
+    styles: {
+        main: "./src/styles/main.styl",
+        watch: "./src/styles/**/*.styl",
+        output: "./build/css"
+    },
+    jade: {
+        main: "./src/jade/*.jade",
+        watch: "./src/jade/**/*.jade",
+        output: "./build"
+    }
+}
 
-gulp.task("autoprefixer", function(){
-    return gulp.src("../public/assets/css/*.css")
-    .pipe(plumber())
-    .pipe(autoprefixer({
-        browsers: ['last 2 versions'],
-        cascade: false
-    }))
-    .pipe(gulp.dest("../public/assets/css"));
+//------------------------------------------
+//WebServer
+//------------------------------------------
+
+gulp.task("server", function(){
+    gulp.src("./build")
+        .pipe(plumber())
+        .pipe(webserver({
+            host: "0.0.0.0",
+            port: 8080,
+            livereload: true
+        }));
 });
 
-gulp.task("jade_html", function(){
-    gulp.src(["index.jade", "./article/article.jade"])
-    .pipe(plumber())
-    .pipe(jade({pretty: true}))
-    .pipe(gulp.dest("../public/"));
+
+//----------------------------------------
+// Compilar Jade
+//----------------------------------------
+gulp.task("build:jade", function(){
+    gulp.src(config.jade.main)
+        .pipe(plumber())
+        .pipe(jade({
+            pretty: true
+        }))
+        .pipe(gulp.dest(config.jade.output));
 });
 
 
-gulp.task("sass_css", function(){
-    gulp.src("./main.scss")
-    .pipe(plumber())
-    .pipe(sass({outputStyle: "compressed"}))
-    .pipe(gulp.dest("../public/assets/css"));
+//----------------------------------------
+//Compilar Stylus
+//----------------------------------------
+gulp.task("build:css", function(){
+    gulp.src(config.styles.main)
+        .pipe(plumber())
+        .pipe(stylus({
+            use: nib(),
+            "include css": true
+        }))
+        .pipe(minifyCss())
+        .pipe(gulp.dest(config.styles.output));
 });
 
+//--------------------------------------------
+//Build 
+//--------------------------------------------
+gulp.task("build", ["build:css", "build:jade"]);
+
+//--------------------------------------------
+//Watch
+//--------------------------------------------
 gulp.task("watch", function(){
-        gulp.watch(["./*.jade", "./articles/*.jade", "./aside/*.jade" ,"./footer/*.jade", "./header/*.jade", "./nav/*.jade", "./topBanner/*.jade", "./article/article.jade"], ["jade_html"]);
-        gulp.watch(["./*.scss", "./articles/*.scss", "./aside/*.scss", "./footer/*.scss", "./header/*.scss", "./nav/*.scss", "./topBanner/*.scss", "./article/*.scss"], ["sass_css"]);
-        gulp.watch("../public/assets/css/*.css", ["autoprefixer"]);
+    gulp.watch(config.styles.watch, ["build:css"]);
+    gulp.watch(config.jade.watch, ["build:jade"]);
 });
+
+//---------------------------------------
+//Default
+//---------------------------------------
+gulp.task("default", ["server", "build", "watch" ]);
