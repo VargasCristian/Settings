@@ -1,5 +1,6 @@
 var gulp = require('gulp'), 
-    browserify = require('browserify'), 
+    browserify = require('browserify'),
+    babel = require('babelify'),
     watchify = require('watchify'), 
     source = require('vinyl-source-stream'); 
 
@@ -13,6 +14,9 @@ var bundler = watchify(browserify(entry, args));
 function createBundle(){ 
     console.log('Now building...'); 
     return bundler.bundle() 
+        .pipe(babel({
+            presets: ['es2015']
+        }))
         .pipe(source('bundle.js')) //Nombre del bundle final
         .pipe(gulp.dest('./build')); //Directorio de destino
 } 
